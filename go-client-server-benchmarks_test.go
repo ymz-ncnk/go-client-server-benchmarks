@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	srv "github.com/cmd-stream/cmd-stream-go/server"
 	cdc "github.com/cmd-stream/codec-mus-stream-go"
 	sndr "github.com/cmd-stream/sender-go"
 	"github.com/montanaflynn/stats"
@@ -144,7 +145,6 @@ func BenchmarkQPS(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
 		})
 	})
-
 }
 
 // nethttp_json is commented out because it takes too long to run.
@@ -246,7 +246,6 @@ func BenchmarkFixed(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
 		})
 	})
-
 }
 
 // -----------------------------------------------------------------------------
@@ -254,14 +253,16 @@ func BenchmarkFixed(b *testing.B) {
 // -----------------------------------------------------------------------------
 
 func benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount int,
-	dataSet [][]*common.ProtoData, b *testing.B) {
+	dataSet [][]*common.ProtoData, b *testing.B,
+) {
 	benchmark_gRPC_HTTP2_Protobuf(clientsCount, 0, dataSet, ghp.ExchangeQPS, b)
 	b.ReportMetric(0, NsOpMetric)
 	b.ReportMetric(float64(b.Elapsed()), NsMetric)
 }
 
 func benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n int,
-	dataSet [][]*common.ProtoData, b *testing.B) {
+	dataSet [][]*common.ProtoData, b *testing.B,
+) {
 	var (
 		copsD      = make(chan time.Duration, n)
 		exchangeFn = func(data *common.ProtoData, client ghp.EchoServiceClient,
@@ -420,14 +421,19 @@ func benchmark_CmdStream_TCP_MUS(clientsCount, N int,
 ) {
 	var (
 		addr        = "127.0.0.1:9003"
-		wgS         = &sync.WaitGroup{}
+		invoker     = srv.NewInvoker(cstm_rcvr.Receiver{})
 		serverCodec = cdc.NewServerCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
 		clientCodec = cdc.NewClientCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
+		wgS         = &sync.WaitGroup{}
 	)
-	server, err := cs.StartServer(addr, clientsCount, serverCodec, cstm_rcvr.Receiver{}, wgS)
-	if err != nil {
-		b.Fatal(err)
-	}
+	server := cs.MakeServer(clientsCount, serverCodec, invoker)
+	wgS.Add(1)
+	go func() {
+		server.ListenAndServe(addr)
+		wgS.Done()
+	}()
+	time.Sleep(100 * time.Millisecond)
+
 	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
 	if err != nil {
 		b.Fatal(err)
@@ -446,12 +452,13 @@ func benchmark_CmdStream_TCP_MUS(clientsCount, N int,
 	wg.Wait()
 	b.StopTimer()
 
-	if err = cs.CloseSender(sender); err != nil {
+	if err = sender.CloseAndWait(time.Second); err != nil {
 		b.Fatal(err)
 	}
-	if err = cs.CloseServer(server, wgS); err != nil {
+	if err = server.Close(); err != nil {
 		b.Fatal(err)
 	}
+	wgS.Wait()
 }
 
 // -----------------------------------------------------------------------------
@@ -496,14 +503,18 @@ func benchmark_CmdStream_TCP_Protobuf(clientsCount, N int,
 ) {
 	var (
 		addr        = "127.0.0.1:9004"
-		wgS         = &sync.WaitGroup{}
+		invoker     = srv.NewInvoker(cstp_rcvr.Receiver{})
 		serverCodec = cdc.NewTypedServerCodec(cstp_cmds.EchoCmdMUS, cstp_rslts.EchoResultMUS)
 		clientCodec = cdc.NewTypedClientCodec(cstp_cmds.EchoCmdMUS, cstp_rslts.EchoResultMUS)
+		wgS         = &sync.WaitGroup{}
 	)
-	server, err := cs.StartServer(addr, clientsCount, serverCodec, cstp_rcvr.Receiver{}, wgS)
-	if err != nil {
-		b.Fatal(err)
-	}
+	server := cs.MakeServer(clientsCount, serverCodec, invoker)
+	wgS.Add(1)
+	go func() {
+		server.ListenAndServe(addr)
+		wgS.Done()
+	}()
+	time.Sleep(100 * time.Millisecond)
 	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
 	if err != nil {
 		b.Fatal(err)
@@ -522,12 +533,13 @@ func benchmark_CmdStream_TCP_Protobuf(clientsCount, N int,
 	wg.Wait()
 	b.StopTimer()
 
-	if err = cs.CloseSender(sender); err != nil {
+	if err = sender.CloseAndWait(time.Second); err != nil {
 		b.Fatal(err)
 	}
-	if err = cs.CloseServer(server, wgS); err != nil {
+	if err = server.Close(); err != nil {
 		b.Fatal(err)
 	}
+	wgS.Wait()
 }
 
 func n() (n int, err error) {

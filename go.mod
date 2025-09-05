@@ -6,11 +6,11 @@ require (
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/cloudwego/fastpb v0.0.5
 	github.com/cloudwego/kitex v0.13.1
-	github.com/cmd-stream/cmd-stream-go v0.4.1-0.20250604235501-95e8b31db451
+	github.com/cmd-stream/cmd-stream-go v0.4.2
 	github.com/cmd-stream/codec-mus-stream-go v0.0.0-20250610134538-e3791de7edae
-	github.com/cmd-stream/core-go v0.0.0-20250602134159-c37a0a251158
-	github.com/cmd-stream/sender-go v0.0.0-20250603160412-788b660ce852
-	github.com/cmd-stream/transport-go v0.0.0-20250602165251-588736e072ce
+	github.com/cmd-stream/core-go v0.0.0-20250905212819-3a93b986e5d9
+	github.com/cmd-stream/sender-go v0.0.0-20250905224940-48fe74f4f43a
+	github.com/cmd-stream/transport-go v0.0.0-20250704194107-8696d9c42b6d
 	github.com/montanaflynn/stats v0.7.1
 	github.com/mus-format/dts-stream-go v0.9.0
 	github.com/mus-format/ext-mus-stream-go v0.0.0-20250424190117-02f7e9442021
@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	github.com/cmd-stream/delegate-go v0.0.0-20250602164806-f3287deb62cd // indirect
+	github.com/cmd-stream/delegate-go v0.0.0-20250704193228-6d6ed6ac102f // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/cloudwego/netpoll v0.7.0 // indirect
 	github.com/cloudwego/runtimex v0.1.1 // indirect
 	github.com/cloudwego/thriftgo v0.4.1 // indirect
-	github.com/cmd-stream/handler-go v0.0.0-20250602165153-3a7b05a77e33 // indirect
+	github.com/cmd-stream/handler-go v0.0.0-20250704193654-7a2ca8f254de
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
