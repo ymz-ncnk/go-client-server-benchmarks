@@ -7,6 +7,7 @@ import (
 	"flag"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,11 +15,19 @@ import (
 	"time"
 
 	srv "github.com/cmd-stream/cmd-stream-go/server"
-	cdc "github.com/cmd-stream/codec-mus-stream-go"
+	codecjson "github.com/cmd-stream/codec-json-go"
+	codecmus "github.com/cmd-stream/codec-mus-stream-go"
+	codecproto "github.com/cmd-stream/codec-protobuf-go"
 	sndr "github.com/cmd-stream/sender-go"
 	"github.com/montanaflynn/stats"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
 	cs "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream"
+
+	cstj "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json"
+	cstj_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/cmds"
+	cstj_rcvr "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/receiver"
+	cstj_rslts "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/results"
+
 	cstm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
 	cstm_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/cmds"
 	cstm_rcvr "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/receiver"
@@ -49,8 +58,11 @@ type ExchangeFn_Kitex = func(data *kthp_echo.KitexData,
 type ExchangeFn_CmdStream = func(cmd cstm_cmds.EchoCmd,
 	sender sndr.Sender[cstm_rcvr.Receiver], wg *sync.WaitGroup, b *testing.B)
 
-type ExchangeFn_CmdStream_Protobuf = func(cmd cstp_cmds.EchoCmd,
+type ExchangeFn_CmdStream_Protobuf = func(cmd *cstp_cmds.EchoCmd,
 	sender sndr.Sender[cstp_rcvr.Receiver], wg *sync.WaitGroup, b *testing.B)
+
+type ExchangeFn_CmdStream_JSON = func(cmd cstj_cmds.EchoCmd,
+	sender sndr.Sender[cstj_rcvr.Receiver], wg *sync.WaitGroup, b *testing.B)
 
 func BenchmarkQPS(b *testing.B) {
 	var (
@@ -59,6 +71,7 @@ func BenchmarkQPS(b *testing.B) {
 		kthpDataSet = ToKthpDataSet(dataSet)
 		cstmDataSet = ToCstmDataSet(dataSet)
 		cstpDataSet = ToCstpDataSet(dataSet)
+		cstjDataSet = ToCstjDataSet(dataSet)
 	)
 
 	b.Run("1", func(b *testing.B) {
@@ -75,6 +88,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
 		})
 	})
 
@@ -93,6 +109,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
 		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
+		})
 	})
 
 	b.Run("4", func(b *testing.B) {
@@ -109,6 +128,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
 		})
 	})
 
@@ -127,6 +149,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
 		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
+		})
 	})
 
 	b.Run("16", func(b *testing.B) {
@@ -143,6 +168,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
 		})
 	})
 }
@@ -160,6 +188,7 @@ func BenchmarkFixed(b *testing.B) {
 		kthpDataSet = ToKthpDataSet(dataSet)
 		cstmDataSet = ToCstmDataSet(dataSet)
 		cstpDataSet = ToCstpDataSet(dataSet)
+		cstjDataSet = ToCstjDataSet(dataSet)
 	)
 
 	b.Run("1", func(b *testing.B) {
@@ -176,6 +205,9 @@ func BenchmarkFixed(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
 		})
 	})
 
@@ -194,6 +226,9 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
 		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
+		})
 	})
 
 	b.Run("4", func(b *testing.B) {
@@ -210,6 +245,9 @@ func BenchmarkFixed(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
 		})
 	})
 
@@ -228,6 +266,9 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
 		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
+		})
 	})
 
 	b.Run("16", func(b *testing.B) {
@@ -244,6 +285,9 @@ func BenchmarkFixed(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
+		})
+		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
 		})
 	})
 }
@@ -422,8 +466,8 @@ func benchmark_CmdStream_TCP_MUS(clientsCount, N int,
 	var (
 		addr        = "127.0.0.1:9003"
 		invoker     = srv.NewInvoker(cstm_rcvr.Receiver{})
-		serverCodec = cdc.NewServerCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
-		clientCodec = cdc.NewClientCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
+		serverCodec = codecmus.NewServerCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
+		clientCodec = codecmus.NewClientCodec(cstm_cmds.CmdMUS, cstm_rslts.ResultMUS)
 		wgS         = &sync.WaitGroup{}
 	)
 	server := cs.MakeServer(clientsCount, serverCodec, invoker)
@@ -469,7 +513,7 @@ func benchmark_CmdStream_TCP_MUS(clientsCount, N int,
 // https://github.com/cmd-stream/cmd-stream-examples-go/tree/main/standard_protobuf.
 
 func benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount int,
-	dataSet [][]cstp_cmds.EchoCmd,
+	dataSet [][]*cstp_cmds.EchoCmd,
 	b *testing.B,
 ) {
 	benchmark_CmdStream_TCP_Protobuf(clientsCount, 0, dataSet, cstp.ExchangeQPS, b)
@@ -478,12 +522,12 @@ func benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount int,
 }
 
 func benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n int,
-	dataSet [][]cstp_cmds.EchoCmd,
+	dataSet [][]*cstp_cmds.EchoCmd,
 	b *testing.B,
 ) {
 	var (
 		copsD      = make(chan time.Duration, n)
-		exchangeFn = func(cmd cstp_cmds.EchoCmd, sender sndr.Sender[cstp_rcvr.Receiver],
+		exchangeFn = func(cmd *cstp_cmds.EchoCmd, sender sndr.Sender[cstp_rcvr.Receiver],
 			wg *sync.WaitGroup,
 			b *testing.B,
 		) {
@@ -497,16 +541,24 @@ func benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n int,
 }
 
 func benchmark_CmdStream_TCP_Protobuf(clientsCount, N int,
-	dataSet [][]cstp_cmds.EchoCmd,
+	dataSet [][]*cstp_cmds.EchoCmd,
 	exchangFn ExchangeFn_CmdStream_Protobuf,
 	b *testing.B,
 ) {
 	var (
-		addr        = "127.0.0.1:9004"
-		invoker     = srv.NewInvoker(cstp_rcvr.Receiver{})
-		serverCodec = cdc.NewTypedServerCodec(cstp_cmds.EchoCmdMUS, cstp_rslts.EchoResultMUS)
-		clientCodec = cdc.NewTypedClientCodec(cstp_cmds.EchoCmdMUS, cstp_rslts.EchoResultMUS)
-		wgS         = &sync.WaitGroup{}
+		addr     = "127.0.0.1:9004"
+		invoker  = srv.NewInvoker(cstp_rcvr.Receiver{})
+		cmdTypes = []reflect.Type{
+			reflect.TypeFor[*cstp_cmds.EchoCmd](),
+		}
+		resultTypes = []reflect.Type{
+			reflect.TypeFor[*cstp_rslts.EchoResult](),
+		}
+		serverCodec = codecproto.NewServerCodec[cstp_rcvr.Receiver](cmdTypes,
+			resultTypes)
+		clientCodec = codecproto.NewClientCodec[cstp_rcvr.Receiver](cmdTypes,
+			resultTypes)
+		wgS = &sync.WaitGroup{}
 	)
 	server := cs.MakeServer(clientsCount, serverCodec, invoker)
 	wgS.Add(1)
@@ -515,6 +567,93 @@ func benchmark_CmdStream_TCP_Protobuf(clientsCount, N int,
 		wgS.Done()
 	}()
 	time.Sleep(100 * time.Millisecond)
+	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	wg := &sync.WaitGroup{}
+	for i := 0; i < b.N; i++ {
+		if N != 0 && i == N {
+			break
+		}
+		wg.Add(clientsCount)
+		for j := range clientsCount {
+			go exchangFn(dataSet[j][i], sender, wg, b)
+		}
+	}
+	wg.Wait()
+	b.StopTimer()
+
+	if err = sender.CloseAndWait(time.Second); err != nil {
+		b.Fatal(err)
+	}
+	if err = server.Close(); err != nil {
+		b.Fatal(err)
+	}
+	wgS.Wait()
+}
+
+// -----------------------------------------------------------------------------
+// cmd-stream/TCP,JSON
+// -----------------------------------------------------------------------------
+
+func benchmarkQPS_CmdStream_TCP_JSON(clientsCount int,
+	dataSet [][]cstj_cmds.EchoCmd,
+	b *testing.B,
+) {
+	benchmark_CmdStream_TCP_JSON(clientsCount, 0, dataSet, cstj.ExchangeQPS, b)
+	b.ReportMetric(0, NsOpMetric)
+	b.ReportMetric(float64(b.Elapsed()), NsMetric)
+}
+
+func benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n int,
+	dataSet [][]cstj_cmds.EchoCmd,
+	b *testing.B,
+) {
+	var (
+		copsD      = make(chan time.Duration, n)
+		exchangeFn = func(cmd cstj_cmds.EchoCmd, sender sndr.Sender[cstj_rcvr.Receiver],
+			wg *sync.WaitGroup,
+			b *testing.B,
+		) {
+			cstj.ExchangeFixed(cmd, sender, copsD, wg, b)
+		}
+		N = n / clientsCount
+	)
+	benchmark_CmdStream_TCP_JSON(clientsCount, N, dataSet, exchangeFn, b)
+	b.ReportMetric(float64(N), NMetric)
+	reportMetrics(copsD, b)
+}
+
+func benchmark_CmdStream_TCP_JSON(clientsCount, N int,
+	dataSet [][]cstj_cmds.EchoCmd,
+	exchangFn ExchangeFn_CmdStream_JSON,
+	b *testing.B,
+) {
+	var (
+		addr     = "127.0.0.1:9004"
+		invoker  = srv.NewInvoker(cstj_rcvr.Receiver{})
+		cmdTypes = []reflect.Type{
+			reflect.TypeFor[cstj_cmds.EchoCmd](),
+		}
+		resultTypes = []reflect.Type{
+			reflect.TypeFor[cstj_rslts.EchoResult](),
+		}
+		serverCodec = codecjson.NewServerCodec[cstj_rcvr.Receiver](cmdTypes,
+			resultTypes)
+		clientCodec = codecjson.NewClientCodec[cstj_rcvr.Receiver](cmdTypes,
+			resultTypes)
+		wgS = &sync.WaitGroup{}
+	)
+	server := cs.MakeServer(clientsCount, serverCodec, invoker)
+	wgS.Add(1)
+	go func() {
+		server.ListenAndServe(addr)
+		wgS.Done()
+	}()
+	time.Sleep(100 * time.Millisecond)
+
 	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
 	if err != nil {
 		b.Fatal(err)

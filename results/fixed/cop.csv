@@ -1,6 +1,6 @@
-clients,cmd-stream_tcp_mus,cmd-stream_tcp_protobuf,grpc_http2_protobuf,kitex_ttheader_protobuf
-1,0.341,0.442,1.524,0.410
-2,0.211,0.284,0.838,0.329
-4,0.127,0.159,0.641,0.282
-8,0.083,0.092,0.579,0.283
-16,0.073,0.078,0.499,0.292
+clients,cmd-stream_tcp_json,cmd-stream_tcp_mus,cmd-stream_tcp_protobuf,grpc_http2_protobuf,kitex_ttheader_protobuf
+1,1.300,0.365,0.483,1.382,0.375
+2,0.753,0.222,0.301,0.830,0.309
+4,0.488,0.136,0.182,0.649,0.299
+8,0.190,0.083,0.099,0.592,0.294
+16,0.145,0.078,0.098,0.496,0.294

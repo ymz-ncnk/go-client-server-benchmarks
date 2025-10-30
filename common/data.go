@@ -6,8 +6,10 @@ import (
 	"github.com/brianvoe/gofakeit"
 )
 
-const Charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const MaxStringLength = 1007
+const (
+	Charset         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	MaxStringLength = 1007
+)
 
 type Data struct {
 	Bool    bool
@@ -55,8 +57,8 @@ func EqualData(d1, d2 Data) bool {
 		d1.Float64 == d2.Float64
 }
 
-func EqualProtoData(d1, d2 *ProtoData) bool {
-	return d1.Bool == d2.Bool && d1.Int64 == d2.Int64 &&
-		d1.String_ == d2.String_ &&
-		d1.Float64 == d2.Float64
-}
+// func EqualProtoData(d1, d2 *ProtoData) bool {
+// 	return d1.Bool == d2.Bool && d1.Int64 == d2.Int64 &&
+// 		d1.String_ == d2.String_ &&
+// 		d1.Float64 == d2.Float64
+// }

@@ -2,6 +2,7 @@ package gcscb
 
 import (
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
+	cstj_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/cmds"
 	cstm_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/cmds"
 	cstp_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/cmds"
 	kthp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
@@ -18,15 +19,26 @@ func ToCstmDataSet(dataSet [][]common.Data) [][]cstm_cmds.EchoCmd {
 	return cmdDataSet
 }
 
-func ToCstpDataSet(dataSet [][]common.Data) [][]cstp_cmds.EchoCmd {
+func ToCstpDataSet(dataSet [][]common.Data) [][]*cstp_cmds.EchoCmd {
 	var (
-		cmdDataSet   = make([][]cstp_cmds.EchoCmd, len(dataSet))
+		cmdDataSet   = make([][]*cstp_cmds.EchoCmd, len(dataSet))
 		protoDataSet = common.ToProtoData(dataSet)
 	)
 	for i := range len(protoDataSet) {
-		cmdDataSet[i] = make([]cstp_cmds.EchoCmd, len(protoDataSet[i]))
+		cmdDataSet[i] = make([]*cstp_cmds.EchoCmd, len(protoDataSet[i]))
 		for j := range len(protoDataSet[i]) {
-			cmdDataSet[i][j] = cstp_cmds.EchoCmd{ProtoData: protoDataSet[i][j]}
+			cmdDataSet[i][j] = &cstp_cmds.EchoCmd{ProtoData: protoDataSet[i][j]}
+		}
+	}
+	return cmdDataSet
+}
+
+func ToCstjDataSet(dataSet [][]common.Data) [][]cstj_cmds.EchoCmd {
+	cmdDataSet := make([][]cstj_cmds.EchoCmd, len(dataSet))
+	for i := range len(dataSet) {
+		cmdDataSet[i] = make([]cstj_cmds.EchoCmd, len(dataSet[i]))
+		for j := range len(dataSet[i]) {
+			cmdDataSet[i][j] = cstj_cmds.EchoCmd(dataSet[i][j])
 		}
 	}
 	return cmdDataSet

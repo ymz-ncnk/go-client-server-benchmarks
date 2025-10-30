@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
+	"google.golang.org/protobuf/proto"
 )
 
 func ExchangeFixed(data *common.ProtoData, client EchoServiceClient,
@@ -22,7 +23,7 @@ func ExchangeFixed(data *common.ProtoData, client EchoServiceClient,
 		return
 	}
 	common.QueueCopD(copsD, time.Since(start))
-	if !common.EqualProtoData(data, resultData) {
+	if !proto.Equal(data, resultData) {
 		b.Error("unexpected result")
 	}
 }
@@ -37,7 +38,7 @@ func ExchangeQPS(data *common.ProtoData, client EchoServiceClient,
 		b.Error(err)
 		return
 	}
-	if !common.EqualProtoData(data, resultData) {
+	if !proto.Equal(data, resultData) {
 		b.Error("unexpected result")
 	}
 }

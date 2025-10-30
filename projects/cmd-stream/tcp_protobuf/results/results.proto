@@ -1,0 +1,12 @@
+syntax = "proto3";
+package results;
+
+option go_package = "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/results";
+
+// protoc -I=. -I=../../../common --go_out=. --go_opt=paths=source_relative ./results/results.proto
+
+import "data.proto";
+
+message EchoResult {
+  common.ProtoData proto_data = 1; // reference the existing message
+}

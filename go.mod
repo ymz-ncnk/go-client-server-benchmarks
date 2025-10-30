@@ -6,23 +6,26 @@ require (
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/cloudwego/fastpb v0.0.5
 	github.com/cloudwego/kitex v0.13.1
-	github.com/cmd-stream/cmd-stream-go v0.4.2
-	github.com/cmd-stream/codec-mus-stream-go v0.0.0-20250610134538-e3791de7edae
-	github.com/cmd-stream/core-go v0.0.0-20250905212819-3a93b986e5d9
+	github.com/cmd-stream/cmd-stream-go v0.4.3
+	github.com/cmd-stream/codec-json-go v0.0.0-20251030154419-e4e16aff6ca5
+	github.com/cmd-stream/codec-mus-stream-go v0.0.0-20251030151338-73189e215130
+	github.com/cmd-stream/codec-protobuf-go v0.0.0-20251030025037-8687ed8d8e43
+	github.com/cmd-stream/core-go v0.0.0-20251027204658-b87de59c010f
 	github.com/cmd-stream/sender-go v0.0.0-20250905224940-48fe74f4f43a
-	github.com/cmd-stream/transport-go v0.0.0-20250704194107-8696d9c42b6d
+	github.com/cmd-stream/transport-go v0.0.0-20251027205650-194496708c59
 	github.com/montanaflynn/stats v0.7.1
-	github.com/mus-format/dts-stream-go v0.9.0
+	github.com/mus-format/dts-stream-go v0.9.1
 	github.com/mus-format/ext-mus-stream-go v0.0.0-20250424190117-02f7e9442021
-	github.com/mus-format/mus-stream-go v0.7.0
+	github.com/mus-format/mus-stream-go v0.7.2
 	github.com/mus-format/musgen-go v0.2.1-0.20250606195305-861223f60a8c
 	github.com/ymz-ncnk/assert v0.0.0-20250528151733-c41b2fca7933
 	google.golang.org/grpc v1.72.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
-	github.com/cmd-stream/delegate-go v0.0.0-20250704193228-6d6ed6ac102f // indirect
+	github.com/cmd-stream/codec-generic-go v0.0.0-20251030012221-8ba570d827d9 // indirect
+	github.com/cmd-stream/delegate-go v0.0.0-20251027205011-a3a232844e87 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
@@ -43,7 +46,7 @@ require (
 	github.com/cloudwego/netpoll v0.7.0 // indirect
 	github.com/cloudwego/runtimex v0.1.1 // indirect
 	github.com/cloudwego/thriftgo v0.4.1 // indirect
-	github.com/cmd-stream/handler-go v0.0.0-20250704193654-7a2ca8f254de
+	github.com/cmd-stream/handler-go v0.0.0-20251027205128-14741feb05d8
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -54,7 +57,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/mus-format/common-go v0.0.0-20250307125743-867bbd6eb59c
+	github.com/mus-format/common-go v0.0.0-20251026152644-9f5ac6728d8a
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
