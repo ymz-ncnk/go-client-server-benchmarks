@@ -1,4 +1,4 @@
-package tcpproto
+package tcproto
 
 import (
 	"context"
@@ -6,16 +6,13 @@ import (
 	"testing"
 	"time"
 
-	sndr "github.com/cmd-stream/sender-go"
+	sndr "github.com/cmd-stream/cmd-stream-go/sender"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/cmds"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/receiver"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/results"
 )
 
-func ExchangeQPS(cmd *cmds.EchoCmd, sender sndr.Sender[receiver.Receiver],
+func ExchangeQPS(cmd *EchoCmd, sender sndr.Sender[Receiver],
 	wg *sync.WaitGroup,
 	b *testing.B,
 ) {
@@ -25,12 +22,12 @@ func ExchangeQPS(cmd *cmds.EchoCmd, sender sndr.Sender[receiver.Receiver],
 		b.Error(err)
 		return
 	}
-	if !proto.Equal(cmd.ProtoData, result.(*results.EchoResult).ProtoData) {
+	if !proto.Equal(cmd.ProtoData, result.(*EchoResult).ProtoData) {
 		b.Error("unexpected result")
 	}
 }
 
-func ExchangeFixed(cmd *cmds.EchoCmd, sender sndr.Sender[receiver.Receiver],
+func ExchangeFixed(cmd *EchoCmd, sender sndr.Sender[Receiver],
 	copsD chan<- time.Duration,
 	wg *sync.WaitGroup,
 	b *testing.B,
@@ -44,7 +41,7 @@ func ExchangeFixed(cmd *cmds.EchoCmd, sender sndr.Sender[receiver.Receiver],
 	}
 	common.QueueCopD(copsD, time.Since(start))
 
-	if !proto.Equal(cmd.ProtoData, result.(*results.EchoResult).ProtoData) {
+	if !proto.Equal(cmd.ProtoData, result.(*EchoResult).ProtoData) {
 		b.Error("unexpected result")
 	}
 }

@@ -21,6 +21,7 @@ func ExchangeFixed(data *echo.KitexData, client kitexechoservice.Client,
 	r, err := exchange(data, client)
 	if err != nil {
 		b.Error(err)
+		return
 	}
 	common.QueueCopD(copsD, time.Since(start))
 	if !EqualData(data, r) {
@@ -36,6 +37,7 @@ func ExchangeQPS(data *echo.KitexData, client kitexechoservice.Client,
 	r, err := exchange(data, client)
 	if err != nil {
 		b.Error(err)
+		return
 	}
 	if !EqualData(data, r) {
 		b.Error("unexpected result")

@@ -6,7 +6,7 @@ option go_package = "./http2proto";
 
 import "common/data.proto";
 
-// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=.
+// protoc -I.. -I. --go_out=. --go_opt=paths=source_relative --go-grpc_out=.
 // --go-grpc_opt=paths=source_relative ./grpc/http2_protobuf/service.proto
 
 service EchoService {

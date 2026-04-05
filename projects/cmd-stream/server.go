@@ -2,17 +2,17 @@ package cs
 
 import (
 	cmdstream "github.com/cmd-stream/cmd-stream-go"
+	csrv "github.com/cmd-stream/cmd-stream-go/core/srv"
+	hdlr "github.com/cmd-stream/cmd-stream-go/handler"
 	srv "github.com/cmd-stream/cmd-stream-go/server"
-	csrv "github.com/cmd-stream/core-go/server"
-	"github.com/cmd-stream/handler-go"
-	"github.com/cmd-stream/transport-go"
+	"github.com/cmd-stream/cmd-stream-go/transport"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
 )
 
 func MakeServer[T any](workersCount int, codec srv.Codec[T],
-	invoker handler.Invoker[T],
-) *csrv.Server {
-	return cmdstream.MakeServer(codec, invoker,
+	invoker hdlr.Invoker[T],
+) (*csrv.Server, error) {
+	return cmdstream.NewServerWithInvoker(invoker, codec,
 		srv.WithCore(
 			csrv.WithWorkersCount(workersCount),
 		),

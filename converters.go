@@ -2,43 +2,43 @@ package gcscb
 
 import (
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
-	cstj_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/cmds"
-	cstm_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/cmds"
-	cstp_cmds "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/cmds"
+	cstm_tj "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json"
+	cstm_tm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
+	cstm_tp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf"
 	kthp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
 )
 
-func ToCstmDataSet(dataSet [][]common.Data) [][]cstm_cmds.EchoCmd {
-	cmdDataSet := make([][]cstm_cmds.EchoCmd, len(dataSet))
+func ToCstmTMDataSet(dataSet [][]common.Data) [][]cstm_tm.EchoCmd {
+	cmdDataSet := make([][]cstm_tm.EchoCmd, len(dataSet))
 	for i := range len(dataSet) {
-		cmdDataSet[i] = make([]cstm_cmds.EchoCmd, len(dataSet[i]))
+		cmdDataSet[i] = make([]cstm_tm.EchoCmd, len(dataSet[i]))
 		for j := range len(dataSet[i]) {
-			cmdDataSet[i][j] = cstm_cmds.EchoCmd(dataSet[i][j])
+			cmdDataSet[i][j] = cstm_tm.EchoCmd(dataSet[i][j])
 		}
 	}
 	return cmdDataSet
 }
 
-func ToCstpDataSet(dataSet [][]common.Data) [][]*cstp_cmds.EchoCmd {
+func ToCstmTPDataSet(dataSet [][]common.Data) [][]*cstm_tp.EchoCmd {
 	var (
-		cmdDataSet   = make([][]*cstp_cmds.EchoCmd, len(dataSet))
+		cmdDataSet   = make([][]*cstm_tp.EchoCmd, len(dataSet))
 		protoDataSet = common.ToProtoData(dataSet)
 	)
 	for i := range len(protoDataSet) {
-		cmdDataSet[i] = make([]*cstp_cmds.EchoCmd, len(protoDataSet[i]))
+		cmdDataSet[i] = make([]*cstm_tp.EchoCmd, len(protoDataSet[i]))
 		for j := range len(protoDataSet[i]) {
-			cmdDataSet[i][j] = &cstp_cmds.EchoCmd{ProtoData: protoDataSet[i][j]}
+			cmdDataSet[i][j] = &cstm_tp.EchoCmd{ProtoData: protoDataSet[i][j]}
 		}
 	}
 	return cmdDataSet
 }
 
-func ToCstjDataSet(dataSet [][]common.Data) [][]cstj_cmds.EchoCmd {
-	cmdDataSet := make([][]cstj_cmds.EchoCmd, len(dataSet))
+func ToCstmTJDataSet(dataSet [][]common.Data) [][]cstm_tj.EchoCmd {
+	cmdDataSet := make([][]cstm_tj.EchoCmd, len(dataSet))
 	for i := range len(dataSet) {
-		cmdDataSet[i] = make([]cstj_cmds.EchoCmd, len(dataSet[i]))
+		cmdDataSet[i] = make([]cstm_tj.EchoCmd, len(dataSet[i]))
 		for j := range len(dataSet[i]) {
-			cmdDataSet[i][j] = cstj_cmds.EchoCmd(dataSet[i][j])
+			cmdDataSet[i][j] = cstm_tj.EchoCmd(dataSet[i][j])
 		}
 	}
 	return cmdDataSet
@@ -52,7 +52,7 @@ func ToKthpDataSet(dataSet [][]common.Data) [][]*kthp_echo.KitexData {
 			kitexDataSet[i][j] = &kthp_echo.KitexData{
 				Bool:    dataSet[i][j].Bool,
 				Int64:   dataSet[i][j].Int64,
-				String_: dataSet[i][j].String,
+				String:  dataSet[i][j].String,
 				Float64: dataSet[i][j].Float64,
 			}
 		}

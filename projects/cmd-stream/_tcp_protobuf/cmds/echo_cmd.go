@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cmd-stream/core-go"
+	"github.com/cmd-stream/cmd-stream-go/core"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
 	rcvr "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/receiver"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf/results"

@@ -4,10 +4,10 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/cmd-stream/core-go"
-	musgen "github.com/mus-format/musgen-go/mus"
-	genops "github.com/mus-format/musgen-go/options/generate"
-	introps "github.com/mus-format/musgen-go/options/interface"
+	"github.com/cmd-stream/cmd-stream-go/core"
+	musgen "github.com/mus-format/mus-gen-go/mus"
+	genops "github.com/mus-format/mus-gen-go/options/gen"
+	introps "github.com/mus-format/mus-gen-go/options/interface"
 	assert "github.com/ymz-ncnk/assert/panic"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/cmds"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/receiver"
@@ -18,7 +18,7 @@ func init() {
 }
 
 func main() {
-	g, err := musgen.NewCodeGenerator(
+	g, err := musgen.NewGenerator(
 		genops.WithPkgPath("github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus/cmds"),
 		genops.WithStream(),
 	)
@@ -28,7 +28,7 @@ func main() {
 	err = g.AddStruct(echoCmdType)
 	assert.EqualError(err, nil)
 
-	err = g.AddDTS(echoCmdType)
+	err = g.AddTyped(echoCmdType)
 	assert.EqualError(err, nil)
 
 	err = g.AddInterface(reflect.TypeFor[core.Cmd[receiver.Receiver]](),
@@ -40,6 +40,6 @@ func main() {
 	// Generate
 	bs, err := g.Generate()
 	assert.EqualError(err, nil)
-	err = os.WriteFile("./mus-format.gen.go", bs, 0755)
+	err = os.WriteFile("./mus.gen.go", bs, 0755)
 	assert.EqualError(err, nil)
 }

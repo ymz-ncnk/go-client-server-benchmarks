@@ -4,8 +4,7 @@ package proto;
 
 option go_package = "echo";
 
-// kitex -module=github.com/ymz-ncnk/go-client-server-communication-benchmarks
-// service.proto
+// kitex -module=github.com/ymz-ncnk/go-client-server-communication-benchmarks service.proto
 
 message KitexData {
   bool Bool = 1;

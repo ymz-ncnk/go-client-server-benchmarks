@@ -1,4 +1,4 @@
-package tcpmus
+package tcpjson
 
 import (
 	"context"
@@ -6,15 +6,12 @@ import (
 	"testing"
 	"time"
 
-	sndr "github.com/cmd-stream/sender-go"
+	sndr "github.com/cmd-stream/cmd-stream-go/sender"
 
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/cmds"
-	rcvr "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/receiver"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json/results"
 )
 
-func ExchangeQPS(cmd cmds.EchoCmd, sender sndr.Sender[rcvr.Receiver],
+func ExchangeQPS(cmd EchoCmd, sender sndr.Sender[Receiver],
 	wg *sync.WaitGroup,
 	b *testing.B,
 ) {
@@ -24,12 +21,12 @@ func ExchangeQPS(cmd cmds.EchoCmd, sender sndr.Sender[rcvr.Receiver],
 		b.Error(err)
 		return
 	}
-	if !common.EqualData(common.Data(cmd), common.Data(result.(results.EchoResult))) {
+	if !common.EqualData(common.Data(cmd), common.Data(result.(EchoResult))) {
 		b.Error("unexpected result")
 	}
 }
 
-func ExchangeFixed(cmd cmds.EchoCmd, sender sndr.Sender[rcvr.Receiver],
+func ExchangeFixed(cmd EchoCmd, sender sndr.Sender[Receiver],
 	copsD chan<- time.Duration,
 	wg *sync.WaitGroup,
 	b *testing.B,
@@ -42,7 +39,7 @@ func ExchangeFixed(cmd cmds.EchoCmd, sender sndr.Sender[rcvr.Receiver],
 		return
 	}
 	common.QueueCopD(copsD, time.Since(start))
-	if !common.EqualData(common.Data(cmd), common.Data(result.(results.EchoResult))) {
+	if !common.EqualData(common.Data(cmd), common.Data(result.(EchoResult))) {
 		b.Error("unexpected result")
 	}
 }

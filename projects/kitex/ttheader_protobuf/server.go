@@ -14,6 +14,8 @@ import (
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo/kitexechoservice"
+
+	"github.com/cloudwego/kitex/pkg/remote/codec/protobuf"
 )
 
 func init() {
@@ -29,6 +31,7 @@ func StartServer(addr string, wg *sync.WaitGroup) (server srv.Server) {
 	var opts []srv.Option
 	opts = append(opts, srv.WithServiceAddr(a))
 	opts = append(opts, srv.WithMetaHandler(transmeta.ServerTTHeaderHandler))
+	opts = append(opts, srv.WithPayloadCodec(protobuf.NewProtobufCodec()))
 	opts = append(opts, srv.WithMuxTransport())
 	opts = append(opts, withServerIOBufferSize())
 	server = kitexechoservice.NewServer(new(echoImpl), opts...)
@@ -54,7 +57,7 @@ func (s *echoImpl) Echo(ctx context.Context, req *echo.KitexData) (resp *echo.Ki
 	return &echo.KitexData{
 		Bool:    req.Bool,
 		Int64:   req.Int64,
-		String_: req.String_,
+		String:  req.String,
 		Float64: req.Float64,
 	}, nil
 }
