@@ -9,7 +9,6 @@ libraries and frameworks for Go.
 - [github.com/cloudwego/kitex](https://github.com/cloudwego/kitex) (pinned to 
   **v0.13.1** for multiplexing stability)
 - [github.com/cmd-stream/cmd-stream-go](https://github.com/cmd-stream/cmd-stream-go)
-- [github.com/cmd-stream/cmd-stream-go](https://github.com/cmd-stream/cmd-stream-go)
 
 ## Short Benchmarks Description
 
