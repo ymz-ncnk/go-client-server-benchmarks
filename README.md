@@ -56,7 +56,7 @@ The following participants are limited by HOL blocking:
 - DRPC
 
 In these benchmarks, they all will hit a "performance ceiling" of approximately 
-33 iterations per connection ([results/qps/qps.csv](results/qps/qps.csv)) due to 
+33 iterations per connection ([qps.csv](results/qps/qps.csv)) due to 
 the 30ms server delay:
 
 $$1s / 0.030s \approx 33 \text{ iterations}$$
