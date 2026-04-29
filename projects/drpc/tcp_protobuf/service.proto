@@ -1,0 +1,13 @@
+syntax = "proto3";
+option go_package = "github.com/ymz-ncnk/go-client-server-benchmarks/projects/drpc/tcpproto";
+
+package tcpproto;
+
+import "common/data.proto";
+
+// protoc -I.. -I. --go_out=. --go_opt=paths=source_relative --go-drpc_out=. 
+// --go-drpc_opt=paths=source_relative ./drpc/tcp_protobuf/service.proto
+
+service EchoService {
+  rpc Echo(common.ProtoData) returns (common.ProtoData) {}
+}

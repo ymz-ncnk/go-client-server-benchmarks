@@ -6,21 +6,24 @@ require (
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/cloudwego/kitex v0.13.1 // pinned to v0.13.1 for multiplexing stability in ttheader_protobuf benchmark
 	github.com/cloudwego/prutal v0.1.3
-	github.com/cmd-stream/cmd-stream-go v0.5.1
-	github.com/cmd-stream/codec-json-go v0.0.0-20260404201323-5772992ace91
-	github.com/cmd-stream/codec-mus-stream-go v0.0.0-20260404202400-7fa430a0a576
-	github.com/cmd-stream/codec-protobuf-go v0.0.0-20260404202101-3a0b37ff8334
+	github.com/cmd-stream/cmd-stream-go v0.6.1
+	github.com/cmd-stream/codec-json-go v0.0.0-20260421202202-cd29f9c4adfc
+	github.com/cmd-stream/codec-mus-stream-go v0.0.0-20260415035208-ba6c3f57289a
+	github.com/cmd-stream/codec-protobuf-go v0.0.0-20260421210102-d8dfaf03511a
 	github.com/montanaflynn/stats v0.7.1
-	github.com/mus-format/mus-gen-go v0.4.0
-	github.com/mus-format/mus-stream-go v0.9.1
+	github.com/mus-format/mus-gen-go v0.5.1
+	github.com/mus-format/mus-stream-go v0.10.1
 	github.com/ymz-ncnk/assert v0.0.0-20260108210721-155bc9aa4282
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )
 
+require storj.io/drpc v0.0.34
+
 require (
 	github.com/cloudwego/fastpb v0.0.5 // indirect
-	github.com/cmd-stream/codec-generic-go v0.0.0-20260404200759-65dddacd1fbe // indirect
+	github.com/cmd-stream/codec-go v0.0.0-20260421172244-cee5b400964e // indirect
+	github.com/zeebo/errs v1.2.2 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect

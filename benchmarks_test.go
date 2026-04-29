@@ -27,6 +27,7 @@ import (
 	cstm_tm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
 	cstm_tp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf"
 
+	dtp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/drpc/tcp_protobuf"
 	ghp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/grpc/http2_protobuf"
 	kthp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf"
 	kthp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
@@ -42,6 +43,9 @@ const (
 
 type ExchangeFn_gRPC = func(data *common.ProtoData,
 	client ghp.EchoServiceClient, wg *sync.WaitGroup, b *testing.B)
+
+type ExchangeFn_DRPC = func(data *common.ProtoData,
+	client dtp.DRPCEchoServiceClient, wg *sync.WaitGroup, b *testing.B)
 
 type ExchangeFn_Kitex = func(data *kthp_echo.KitexData,
 	client kitexechoservice.Client, wg *sync.WaitGroup, b *testing.B)
@@ -59,6 +63,7 @@ func BenchmarkQPS(b *testing.B) {
 	var (
 		dataSet     = generateDataSet(16, genSize())
 		ghpDataSet  = common.ToProtoData(dataSet)
+		dtpDataSet  = ghpDataSet
 		kthpDataSet = ToKthpDataSet(dataSet)
 		cstmDataSet = ToCstmTMDataSet(dataSet)
 		cstpDataSet = ToCstmTPDataSet(dataSet)
@@ -82,6 +87,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
+		})
+		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
 		})
 	})
 
@@ -680,6 +688,58 @@ func benchmark_CmdStream_TCP_JSON(clientsCount, N int,
 	}
 	wgS.Wait()
 }
+
+// -----------------------------------------------------------------------------
+// DRPC/TCP,Protobuf
+// -----------------------------------------------------------------------------
+
+func benchmarkQPS_DRPC_TCP_Protobuf(clientsCount int,
+	dataSet [][]*common.ProtoData, b *testing.B,
+) {
+	benchmark_DRPC_TCP_Protobuf(clientsCount, 0, dataSet, dtp.ExchangeQPS, b)
+	b.ReportMetric(0, NsOpMetric)
+	b.ReportMetric(float64(b.Elapsed()), NsMetric)
+}
+
+func benchmark_DRPC_TCP_Protobuf(clientsCount, N int,
+	dataSet [][]*common.ProtoData,
+	exchangeFn ExchangeFn_DRPC,
+	b *testing.B,
+) {
+	var (
+		addr = "127.0.0.1:9005"
+		l    net.Listener
+		err  error
+		wgS  = &sync.WaitGroup{}
+	)
+	l, err = dtp.StartServer(addr, wgS)
+	if err != nil {
+		b.Fatal(err)
+	}
+	clients, err := dtp.MakeClients(addr, clientsCount)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	wg := &sync.WaitGroup{}
+	var i int
+	for i = 0; i < b.N; i++ {
+		if N != 0 && i == N {
+			break
+		}
+		wg.Add(clientsCount)
+		for j := range clientsCount {
+			go exchangeFn(dataSet[j][i], clients[j], wg, b)
+		}
+	}
+	wg.Wait()
+	b.StopTimer()
+	if err = dtp.CloseServer(l, wgS); err != nil {
+		b.Fatal(err)
+	}
+}
+
+// -----------------------------------------------------------------------------
 
 func n() (n int, err error) {
 	var (

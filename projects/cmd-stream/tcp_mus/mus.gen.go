@@ -96,7 +96,7 @@ func (s echoCmdMUS) Skip(r mus.Reader) (n int, err error) {
 	return
 }
 
-var EchoCmdTypedMUS = typed.NewTypedSer(EchoCmdDTM, EchoCmdMUS)
+var EchoCmdTypedMUS = typed.NewSer(EchoCmdDTM, EchoCmdMUS)
 
 var CmdMUS = cmdMUS{}
 
@@ -228,7 +228,7 @@ func (s echoResultMUS) Skip(r mus.Reader) (n int, err error) {
 	return
 }
 
-var EchoResultTypedMUS = typed.NewTypedSer(EchoResultDTM, EchoResultMUS)
+var EchoResultTypedMUS = typed.NewSer(EchoResultDTM, EchoResultMUS)
 
 var ResultMUS = resultMUS{}
 

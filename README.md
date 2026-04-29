@@ -5,10 +5,11 @@ libraries and frameworks for Go.
 
 ## Tested libraries/frameworks
 
-- [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc)
-- [github.com/cloudwego/kitex](https://github.com/cloudwego/kitex) (pinned to 
+- [gRPC](https://pkg.go.dev/google.golang.org/grpc)
+- [Kitex](https://github.com/cloudwego/kitex) (pinned to 
   **v0.13.1** for multiplexing stability)
-- [github.com/cmd-stream/cmd-stream-go](https://github.com/cmd-stream/cmd-stream-go)
+- [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
+- [DRPC](https://github.com/drpcframework/drpc)
 
 ## Short Benchmarks Description
 
@@ -39,7 +40,29 @@ GEN_SIZE=400000 go test -bench BenchmarkQPS -count=10 -timeout=30m
 go test -bench BenchmarkFixed -benchtime=100000x -benchmem -count=10
 ```
 
+### Head-of-Line Blocking
+
+[Head-of-Line (HOL) blocking](https://en.wikipedia.org/wiki/Head-of-line_blocking) 
+refers to the inability to send multiple concurrent requests over a single 
+connection (i.e. you cannot send a new request until the one before it is 
+finished). This behavior is characteristic of HTTP/1.1 and is precisely what 
+HTTP/2 addresses via multiplexing.
+
+The following participants are limited by HOL blocking:
+
+- DRPC
+
+In these benchmarks, they all will hit a "performance ceiling" of approximately 
+33 iterations per connection ([results/qps/qps.csv](results/qps/qps.csv)) due to 
+the 30ms server delay:
+
+$$1s / 0.030s \approx 33 \text{ iterations}$$
+
+### QPS Results
+
 ![image](results/qps/img/qps.png)
+
+### Fixed Results
 
 To get more comparable results, let's check how well all participants can
 handle 100,000 simultaneous requests:
