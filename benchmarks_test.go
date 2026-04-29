@@ -122,6 +122,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
 		})
+		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
+		})
 	})
 
 	b.Run("4", func(b *testing.B) {
@@ -144,6 +147,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
+		})
+		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
 		})
 	})
 
@@ -168,6 +174,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
 		})
+		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
+		})
 	})
 
 	b.Run("16", func(b *testing.B) {
@@ -190,6 +199,9 @@ func BenchmarkQPS(b *testing.B) {
 		})
 		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
+		})
+		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
 		})
 	})
 }
