@@ -5,11 +5,11 @@ libraries and frameworks for Go.
 
 ## Tested libraries/frameworks
 
+- [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
+- [Connect](https://connectrpc.com/)
+- [DRPC](https://github.com/drpcframework/drpc)
 - [gRPC](https://pkg.go.dev/google.golang.org/grpc)
 - [Kitex](https://github.com/cloudwego/kitex)
-- [Connect](https://connectrpc.com/)
-- [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
-- [DRPC](https://github.com/drpcframework/drpc)
 
 ## Short Benchmarks Description
 
