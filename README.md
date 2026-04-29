@@ -7,6 +7,7 @@ libraries and frameworks for Go.
 
 - [gRPC](https://pkg.go.dev/google.golang.org/grpc)
 - [Kitex](https://github.com/cloudwego/kitex)
+- [Connect](https://connectrpc.com/)
 - [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
 - [DRPC](https://github.com/drpcframework/drpc)
 
@@ -19,25 +20,28 @@ follows:
 - The same data is used for all participants, it is generated once and then
   used by everyone.
 - Size of the data varies from 17 to 1024 bytes.
-- The size of the read and write buffers is limited to 4096 bytes.
+- The size of the read and write buffers is limited to 4096 bytes (except Connect).
 - The delay of each response on the server is 30 ms.
 - The received data is checked - it must match the sent data.
 
 ## Results
 
-All [results](results) were obtained on a single laptop (with the connected
-charger and fan running at full speed):
+[Results](results) were obtained on a single laptop (with the connected charger 
+and fan running at full speed):
 
 - CPU: AMD Ryzen 7 PRO 5850U with Radeon Graphics
 - OS: Debian 6.1.148-1 x86_64 GNU/Linux  
 - Go: 1.24.1
 
-with the following commands:
+using the following commands:
 
 ```bash
 GEN_SIZE=400000 go test -bench BenchmarkQPS -count=10 -timeout=30m
 go test -bench BenchmarkFixed -benchtime=100000x -benchmem -count=10
 ```
+
+Only the top 5 fastest cases are shown below. Full results are available in
+[qps.csv](results/qps/qps.csv).
 
 ### Head-of-Line Blocking
 

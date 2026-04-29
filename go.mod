@@ -18,7 +18,10 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-require storj.io/drpc v0.0.34
+require (
+	connectrpc.com/connect v1.19.2
+	storj.io/drpc v0.0.34
+)
 
 require (
 	github.com/cloudwego/fastpb v0.0.5 // indirect
@@ -64,7 +67,7 @@ require (
 	github.com/ymz-ncnk/multierr-go v0.0.0-20230813140901-5e9302c2e02a // indirect
 	golang.org/x/arch v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/net v0.49.0
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516 // indirect

@@ -27,6 +27,8 @@ import (
 	cstm_tm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
 	cstm_tp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf"
 
+	ctp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/connect/conn_protobuf"
+	ctp_service "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/connect/conn_protobuf/connectproto/connectprotoconnect"
 	dtp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/drpc/tcp_protobuf"
 	ghp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/grpc/http2_protobuf"
 	kgp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf"
@@ -46,6 +48,9 @@ type ExchangeFn_gRPC = func(data *common.ProtoData,
 
 type ExchangeFn_DRPC = func(data *common.ProtoData,
 	client dtp.DRPCEchoServiceClient, wg *sync.WaitGroup, b *testing.B)
+
+type ExchangeFn_Connect = func(data *common.ProtoData,
+	client ctp_service.EchoServiceClient, wg *sync.WaitGroup, b *testing.B)
 
 type ExchangeFn_Kitex_gRPC = func(data *kgp_echo.KitexData,
 	client kgp_service.Client, wg *sync.WaitGroup, b *testing.B)
@@ -76,6 +81,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
+		b.Run("connect_conn_protobuf", func(b *testing.B) {
+			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
+		})
 		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
 			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
@@ -99,6 +107,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
+		b.Run("connect_conn_protobuf", func(b *testing.B) {
+			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
+		})
 		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
 			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
@@ -118,6 +129,9 @@ func BenchmarkQPS(b *testing.B) {
 
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
+		})
+		b.Run("connect_conn_protobuf", func(b *testing.B) {
+			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
 		})
 		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
 			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
@@ -139,6 +153,9 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
+		b.Run("connect_conn_protobuf", func(b *testing.B) {
+			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
+		})
 		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
 			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
@@ -158,6 +175,9 @@ func BenchmarkQPS(b *testing.B) {
 
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
+		})
+		b.Run("connect_conn_protobuf", func(b *testing.B) {
+			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
 		})
 		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
 			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
@@ -355,6 +375,51 @@ func benchmark_gRPC_HTTP2_Protobuf(clientsCount, N int,
 	wg.Wait()
 	b.StopTimer()
 	if err = ghp.CloseServer(l, wgS); err != nil {
+		b.Fatal(err)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Connect/Conn,Protobuf
+// -----------------------------------------------------------------------------
+
+func benchmarkQPS_Connect_Conn_Protobuf(clientsCount int,
+	dataSet [][]*common.ProtoData, b *testing.B,
+) {
+	benchmark_Connect_Conn_Protobuf(clientsCount, 0, dataSet, ctp.ExchangeQPS, b)
+	b.ReportMetric(0, NsOpMetric)
+	b.ReportMetric(float64(b.Elapsed()), NsMetric)
+}
+
+func benchmark_Connect_Conn_Protobuf(clientsCount, N int,
+	dataSet [][]*common.ProtoData,
+	exchangeFn ExchangeFn_Connect,
+	b *testing.B,
+) {
+	var (
+		addr = "127.0.0.1:9004"
+		wgS  = &sync.WaitGroup{}
+	)
+	server := ctp.StartServer(addr, wgS)
+	time.Sleep(100 * time.Millisecond)
+	clients, err := ctp.MakeClients(addr, clientsCount)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	wg := &sync.WaitGroup{}
+	for i := 0; i < b.N; i++ {
+		if N != 0 && i == N {
+			break
+		}
+		wg.Add(len(clients))
+		for j := 0; j < len(clients); j++ {
+			go exchangeFn(dataSet[j][i], clients[j], wg, b)
+		}
+	}
+	wg.Wait()
+	b.StopTimer()
+	if err = ctp.StopServer(server, wgS); err != nil {
 		b.Fatal(err)
 	}
 }
