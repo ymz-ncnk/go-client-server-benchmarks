@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
-	github.com/cloudwego/kitex v0.13.1 // pinned to v0.13.1 for multiplexing stability in ttheader_protobuf benchmark
+	github.com/cloudwego/kitex v0.16.1 // pinned to v0.13.1 for multiplexing stability in ttheader_protobuf benchmark
 	github.com/cloudwego/prutal v0.1.3
 	github.com/cmd-stream/cmd-stream-go v0.6.1
 	github.com/cmd-stream/codec-json-go v0.0.0-20260421202202-cd29f9c4adfc

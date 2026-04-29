@@ -29,9 +29,9 @@ import (
 
 	dtp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/drpc/tcp_protobuf"
 	ghp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/grpc/http2_protobuf"
-	kthp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf"
-	kthp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo/kitexechoservice"
+	kgp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf"
+	kgp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo"
+	kgp_service "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo/kitexechoservice"
 )
 
 const (
@@ -47,8 +47,8 @@ type ExchangeFn_gRPC = func(data *common.ProtoData,
 type ExchangeFn_DRPC = func(data *common.ProtoData,
 	client dtp.DRPCEchoServiceClient, wg *sync.WaitGroup, b *testing.B)
 
-type ExchangeFn_Kitex = func(data *kthp_echo.KitexData,
-	client kitexechoservice.Client, wg *sync.WaitGroup, b *testing.B)
+type ExchangeFn_Kitex_gRPC = func(data *kgp_echo.KitexData,
+	client kgp_service.Client, wg *sync.WaitGroup, b *testing.B)
 
 type ExchangeFn_CmdStream_MUS = func(cmd cstm_tm.EchoCmd,
 	sender sndr.Sender[cstm_tm.Receiver], wg *sync.WaitGroup, b *testing.B)
@@ -64,7 +64,7 @@ func BenchmarkQPS(b *testing.B) {
 		dataSet     = generateDataSet(16, genSize())
 		ghpDataSet  = common.ToProtoData(dataSet)
 		dtpDataSet  = ghpDataSet
-		kthpDataSet = ToKthpDataSet(dataSet)
+		kghpDataSet = ToKghpDataSet(dataSet)
 		cstmDataSet = ToCstmTMDataSet(dataSet)
 		cstpDataSet = ToCstmTPDataSet(dataSet)
 		cstjDataSet = ToCstmTJDataSet(dataSet)
@@ -76,8 +76,8 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
@@ -99,8 +99,8 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
@@ -119,8 +119,8 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
@@ -139,8 +139,8 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
@@ -159,8 +159,8 @@ func BenchmarkQPS(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
@@ -184,7 +184,7 @@ func BenchmarkFixed(b *testing.B) {
 	var (
 		dataSet     = generateDataSet(16, n)
 		ghpDataSet  = common.ToProtoData(dataSet)
-		kthpDataSet = ToKthpDataSet(dataSet)
+		kghpDataSet = ToKghpDataSet(dataSet)
 		cstmDataSet = ToCstmTMDataSet(dataSet)
 		cstpDataSet = ToCstmTPDataSet(dataSet)
 		cstjDataSet = ToCstmTJDataSet(dataSet)
@@ -196,8 +196,8 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
@@ -216,8 +216,8 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
@@ -236,8 +236,8 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
@@ -256,8 +256,8 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
@@ -276,8 +276,8 @@ func BenchmarkFixed(b *testing.B) {
 		b.Run("grpc_http2_protobuf", func(b *testing.B) {
 			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
 		})
-		b.Run("kitex_ttheader_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n, kthpDataSet, b)
+		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
 		})
 		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
 			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
@@ -360,50 +360,51 @@ func benchmark_gRPC_HTTP2_Protobuf(clientsCount, N int,
 }
 
 // -----------------------------------------------------------------------------
-// Kitex/TTHeader,Protobuf
+// Kitex/gRPC,Protobuf
 // -----------------------------------------------------------------------------
 
-func benchmarkQPS_Kitex_TTHeader_Protobuf(clientsCount int,
-	dataSet [][]*kthp_echo.KitexData,
+func benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount int,
+	dataSet [][]*kgp_echo.KitexData,
 	b *testing.B,
 ) {
-	benchmark_Kitex_TTHeader_Protobuf(clientsCount, 0, dataSet, kthp.ExchangeQPS, b)
+	benchmark_Kitex_gRPC_Protobuf(clientsCount, 0, dataSet, kgp.ExchangeQPS, b)
 	b.ReportMetric(0, NsOpMetric)
 	b.ReportMetric(float64(b.Elapsed()), NsMetric)
 }
 
-func benchmarkFixed_Kitex_TTHeader_Protobuf(clientsCount, n int,
-	dataSet [][]*kthp_echo.KitexData,
+func benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n int,
+	dataSet [][]*kgp_echo.KitexData,
 	b *testing.B,
 ) {
 	var (
-		copsD                       = make(chan time.Duration, n)
-		exchangeFn ExchangeFn_Kitex = func(data *kthp_echo.KitexData,
-			client kitexechoservice.Client,
+		copsD                            = make(chan time.Duration, n)
+		exchangeFn ExchangeFn_Kitex_gRPC = func(data *kgp_echo.KitexData,
+			client kgp_service.Client,
 			wg *sync.WaitGroup,
 			b *testing.B,
 		) {
-			kthp.ExchangeFixed(data, client, copsD, wg, b)
+			kgp.ExchangeFixed(data, client, copsD, wg, b)
 		}
 		N = n / clientsCount
 	)
-	benchmark_Kitex_TTHeader_Protobuf(clientsCount, N, dataSet,
+	benchmark_Kitex_gRPC_Protobuf(clientsCount, N, dataSet,
 		exchangeFn, b)
 	b.ReportMetric(float64(N), NMetric)
 	reportMetrics(copsD, b)
 }
 
-func benchmark_Kitex_TTHeader_Protobuf(clientsCount, N int,
-	dataSet [][]*kthp_echo.KitexData,
-	exchangeFn ExchangeFn_Kitex,
+func benchmark_Kitex_gRPC_Protobuf(clientsCount, N int,
+	dataSet [][]*kgp_echo.KitexData,
+	exchangeFn ExchangeFn_Kitex_gRPC,
 	b *testing.B,
 ) {
 	var (
-		addr = "127.0.0.1:9002"
+		addr = "127.0.0.1:9003"
 		wgS  = &sync.WaitGroup{}
 	)
-	server := kthp.StartServer(addr, wgS)
-	clients, err := kthp.MakeClients(addr, clientsCount)
+	server := kgp.StartServer(addr, wgS)
+	time.Sleep(100 * time.Millisecond)
+	clients, err := kgp.MakeClients(addr, clientsCount)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -420,7 +421,7 @@ func benchmark_Kitex_TTHeader_Protobuf(clientsCount, N int,
 	}
 	wg.Wait()
 	b.StopTimer()
-	if err = kthp.StopServer(server, wgS); err != nil {
+	if err = kgp.StopServer(server, wgS); err != nil {
 		b.Fatal(err)
 	}
 }

@@ -6,8 +6,7 @@ libraries and frameworks for Go.
 ## Tested libraries/frameworks
 
 - [gRPC](https://pkg.go.dev/google.golang.org/grpc)
-- [Kitex](https://github.com/cloudwego/kitex) (pinned to 
-  **v0.13.1** for multiplexing stability)
+- [Kitex](https://github.com/cloudwego/kitex)
 - [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
 - [DRPC](https://github.com/drpcframework/drpc)
 
@@ -50,7 +49,7 @@ HTTP/2 addresses via multiplexing.
 
 The following participants are limited by HOL blocking:
 
-- DRPC
+- **DRPC**
 
 In these benchmarks, they all will hit a "performance ceiling" of approximately 
 33 iterations per connection ([results/qps/qps.csv](results/qps/qps.csv)) due to 

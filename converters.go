@@ -5,7 +5,7 @@ import (
 	cstm_tj "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json"
 	cstm_tm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
 	cstm_tp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf"
-	kthp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
+	kgp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo"
 )
 
 func ToCstmTMDataSet(dataSet [][]common.Data) [][]cstm_tm.EchoCmd {
@@ -44,12 +44,12 @@ func ToCstmTJDataSet(dataSet [][]common.Data) [][]cstm_tj.EchoCmd {
 	return cmdDataSet
 }
 
-func ToKthpDataSet(dataSet [][]common.Data) [][]*kthp_echo.KitexData {
-	kitexDataSet := make([][]*kthp_echo.KitexData, len(dataSet))
+func ToKghpDataSet(dataSet [][]common.Data) [][]*kgp_echo.KitexData {
+	kitexDataSet := make([][]*kgp_echo.KitexData, len(dataSet))
 	for i := range len(dataSet) {
-		kitexDataSet[i] = make([]*kthp_echo.KitexData, len(dataSet[i]))
+		kitexDataSet[i] = make([]*kgp_echo.KitexData, len(dataSet[i]))
 		for j := range len(dataSet[i]) {
-			kitexDataSet[i][j] = &kthp_echo.KitexData{
+			kitexDataSet[i][j] = &kgp_echo.KitexData{
 				Bool:    dataSet[i][j].Bool,
 				Int64:   dataSet[i][j].Int64,
 				String:  dataSet[i][j].String,

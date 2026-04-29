@@ -1,16 +1,20 @@
-package ttheaderproto
+package grpcproto
 
 import (
+	"io"
+
 	"github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
-	"github.com/cloudwego/kitex/pkg/transmeta"
 	kitex_utils "github.com/cloudwego/kitex/pkg/utils"
 	"github.com/cloudwego/kitex/transport"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo/kitexechoservice"
-
-	"github.com/cloudwego/kitex/pkg/remote/codec/protobuf"
+	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo/kitexechoservice"
 )
+
+func init() {
+	klog.SetOutput(io.Discard)
+}
 
 func MakeClients(addr string, count int) (clients []kitexechoservice.Client,
 	err error) {
@@ -27,12 +31,9 @@ func MakeClients(addr string, count int) (clients []kitexechoservice.Client,
 func makeClient(addr string) (kitexechoservice.Client, error) {
 	var opts []client.Option
 	opts = append(opts, client.WithHostPorts(addr))
-	opts = append(opts, client.WithMetaHandler(transmeta.ClientTTHeaderHandler))
-	opts = append(opts, client.WithPayloadCodec(protobuf.NewProtobufCodec()))
-	opts = append(opts, client.WithTransportProtocol(transport.TTHeader))
-	opts = append(opts, client.WithMuxConnection(1))
+	opts = append(opts, client.WithTransportProtocol(transport.GRPC))
 	opts = append(opts, withClientIOBufferSize())
-	return kitexechoservice.NewClient("echo", opts...)
+	return kitexechoservice.NewClient("KitexEchoService", opts...)
 }
 
 func withClientIOBufferSize() client.Option {

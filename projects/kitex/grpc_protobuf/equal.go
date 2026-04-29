@@ -1,7 +1,7 @@
-package ttheaderproto
+package grpcproto
 
 import (
-	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/ttheader_protobuf/kitex_gen/echo"
+	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo"
 )
 
 func EqualData(d1, d2 *echo.KitexData) bool {
