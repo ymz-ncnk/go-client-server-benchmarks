@@ -53,7 +53,7 @@ HTTP/2 addresses via multiplexing.
 
 The following participants are limited by HOL blocking:
 
-- **DRPC**
+- DRPC
 
 In these benchmarks, they all will hit a "performance ceiling" of approximately 
 33 iterations per connection ([results/qps/qps.csv](results/qps/qps.csv)) due to 
