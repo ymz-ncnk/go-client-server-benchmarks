@@ -21,22 +21,22 @@ func init() {
 	klog.SetOutput(io.Discard)
 }
 
-func StartServer(addr string, wg *sync.WaitGroup) (server srv.Server) {
-	a, err := net.ResolveTCPAddr("tcp", addr)
+func StartServer(addr string, wg *sync.WaitGroup) (net.Addr, srv.Server) {
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
 	var opts []srv.Option
-	opts = append(opts, srv.WithServiceAddr(a))
+	opts = append(opts, srv.WithListener(l))
 	opts = append(opts, srv.WithPayloadCodec(protobuf.NewProtobufCodec()))
 	opts = append(opts, withServerIOBufferSize())
-	server = kitexechoservice.NewServer(new(echoImpl), opts...)
+	server := kitexechoservice.NewServer(new(echoImpl), opts...)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		server.Run()
 	}()
-	return
+	return l.Addr(), server
 }
 
 func StopServer(server srv.Server, wg *sync.WaitGroup) (err error) {

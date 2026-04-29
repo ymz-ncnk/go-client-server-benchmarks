@@ -2,8 +2,9 @@ package grpcproto
 
 import (
 	"io"
+	"time"
 
-	"github.com/cloudwego/kitex/client"
+	cln "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	kitex_utils "github.com/cloudwego/kitex/pkg/utils"
@@ -29,15 +30,16 @@ func MakeClients(addr string, count int) (clients []kitexechoservice.Client,
 }
 
 func makeClient(addr string) (kitexechoservice.Client, error) {
-	var opts []client.Option
-	opts = append(opts, client.WithHostPorts(addr))
-	opts = append(opts, client.WithTransportProtocol(transport.GRPC))
+	var opts []cln.Option
+	opts = append(opts, cln.WithHostPorts(addr))
+	opts = append(opts, cln.WithTransportProtocol(transport.GRPC))
+	opts = append(opts, cln.WithConnectTimeout(5*time.Second))
 	opts = append(opts, withClientIOBufferSize())
 	return kitexechoservice.NewClient("KitexEchoService", opts...)
 }
 
-func withClientIOBufferSize() client.Option {
-	return client.Option{F: func(o *client.Options, di *kitex_utils.Slice) {
+func withClientIOBufferSize() cln.Option {
+	return cln.Option{F: func(o *cln.Options, di *kitex_utils.Slice) {
 		err := o.Configs.(rpcinfo.MutableRPCConfig).SetIOBufferSize(common.IOBufSize)
 		if err != nil {
 			panic(err)

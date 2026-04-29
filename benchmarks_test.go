@@ -5,35 +5,15 @@ package gcscb
 import (
 	"errors"
 	"flag"
-	"net"
 	"os"
-	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	sndr "github.com/cmd-stream/cmd-stream-go/sender"
-	srv "github.com/cmd-stream/cmd-stream-go/server"
-	cdcjson "github.com/cmd-stream/codec-json-go"
-	cdcmus "github.com/cmd-stream/codec-mus-stream-go"
-	cdcproto "github.com/cmd-stream/codec-protobuf-go"
 	"github.com/montanaflynn/stats"
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
-	cs "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream"
-
-	cstm_tj "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_json"
-	cstm_tm "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_mus"
-	cstm_tp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/cmd-stream/tcp_protobuf"
-
-	ctp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/connect/conn_protobuf"
-	ctp_service "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/connect/conn_protobuf/connectproto/connectprotoconnect"
-	dtp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/drpc/tcp_protobuf"
-	ghp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/grpc/http2_protobuf"
-	kgp "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf"
-	kgp_echo "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo"
-	kgp_service "github.com/ymz-ncnk/go-client-server-communication-benchmarks/projects/kitex/grpc_protobuf/kitex_gen/echo/kitexechoservice"
 )
 
 const (
@@ -43,777 +23,102 @@ const (
 	NMetric    = "N"
 )
 
-type ExchangeFn_gRPC = func(data *common.ProtoData,
-	client ghp.EchoServiceClient, wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_DRPC = func(data *common.ProtoData,
-	client dtp.DRPCEchoServiceClient, wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_Connect = func(data *common.ProtoData,
-	client ctp_service.EchoServiceClient, wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_Kitex_gRPC = func(data *kgp_echo.KitexData,
-	client kgp_service.Client, wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_CmdStream_MUS = func(cmd cstm_tm.EchoCmd,
-	sender sndr.Sender[cstm_tm.Receiver], wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_CmdStream_Protobuf = func(cmd *cstm_tp.EchoCmd,
-	sender sndr.Sender[cstm_tp.Receiver], wg *sync.WaitGroup, b *testing.B)
-
-type ExchangeFn_CmdStream_JSON = func(cmd cstm_tj.EchoCmd,
-	sender sndr.Sender[cstm_tj.Receiver], wg *sync.WaitGroup, b *testing.B)
-
 func BenchmarkQPS(b *testing.B) {
 	var (
-		dataSet     = generateDataSet(16, genSize())
-		ghpDataSet  = common.ToProtoData(dataSet)
-		dtpDataSet  = ghpDataSet
-		kghpDataSet = ToKghpDataSet(dataSet)
-		cstmDataSet = ToCstmTMDataSet(dataSet)
-		cstpDataSet = ToCstmTPDataSet(dataSet)
-		cstjDataSet = ToCstmTJDataSet(dataSet)
+		size = genSize()
 	)
 
-	b.Run("1", func(b *testing.B) {
-		clientsCount := 1
+	for _, clientsCount := range []int{1, 2, 4, 8, 16} {
+		b.Run(strconv.Itoa(clientsCount), func(b *testing.B) {
+			dataSet := genDataSet(clientsCount, size)
 
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
+			b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+				ds := ToCmdStreamTJ_DataSet(dataSet)
+				benchmarkQPS_CmdStream_TCP_JSON(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
+				ds := ToCmdStreamTM_DataSet(dataSet)
+				benchmarkQPS_CmdStream_TCP_MUS(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
+				ds := ToCmdStreamTP_DataSet(dataSet)
+				benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("connect_conn_protobuf", func(b *testing.B) {
+				ds := common.ToProtoData(dataSet)
+				benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("drpc_tcp_protobuf", func(b *testing.B) {
+				ds := common.ToProtoData(dataSet)
+				benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("grpc_http2_protobuf", func(b *testing.B) {
+				ds := common.ToProtoData(dataSet)
+				benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+				ds := ToKitexDataSet(dataSet)
+				benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, ds, b)
+				ds = nil
+				runtime.GC()
+			})
 		})
-		b.Run("connect_conn_protobuf", func(b *testing.B) {
-			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
-		})
-		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
-		})
-	})
-
-	b.Run("2", func(b *testing.B) {
-		clientsCount := 2
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("connect_conn_protobuf", func(b *testing.B) {
-			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
-		})
-		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
-		})
-	})
-
-	b.Run("4", func(b *testing.B) {
-		clientsCount := 4
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("connect_conn_protobuf", func(b *testing.B) {
-			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
-		})
-		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
-		})
-	})
-
-	b.Run("8", func(b *testing.B) {
-		clientsCount := 8
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("connect_conn_protobuf", func(b *testing.B) {
-			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
-		})
-		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
-		})
-	})
-
-	b.Run("16", func(b *testing.B) {
-		clientsCount := 16
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("connect_conn_protobuf", func(b *testing.B) {
-			benchmarkQPS_Connect_Conn_Protobuf(clientsCount, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_MUS(clientsCount, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkQPS_CmdStream_TCP_JSON(clientsCount, cstjDataSet, b)
-		})
-		b.Run("drpc_tcp_protobuf", func(b *testing.B) {
-			benchmarkQPS_DRPC_TCP_Protobuf(clientsCount, dtpDataSet, b)
-		})
-	})
+	}
 }
 
-// nethttp_json is commented out because it takes too long to run.
 func BenchmarkFixed(b *testing.B) {
 	n, err := n()
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	var (
-		dataSet     = generateDataSet(16, n)
-		ghpDataSet  = common.ToProtoData(dataSet)
-		kghpDataSet = ToKghpDataSet(dataSet)
-		cstmDataSet = ToCstmTMDataSet(dataSet)
-		cstpDataSet = ToCstmTPDataSet(dataSet)
-		cstjDataSet = ToCstmTJDataSet(dataSet)
-	)
+	for _, clientsCount := range []int{1, 2, 4, 8, 16} {
+		b.Run(strconv.Itoa(clientsCount), func(b *testing.B) {
+			dataSet := genDataSet(clientsCount, n)
 
-	b.Run("1", func(b *testing.B) {
-		clientsCount := 1
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
+			b.Run("cmd-stream_tcp_json", func(b *testing.B) {
+				ds := ToCmdStreamTJ_DataSet(dataSet)
+				benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
+				ds := ToCmdStreamTM_DataSet(dataSet)
+				benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
+				ds := ToCmdStreamTP_DataSet(dataSet)
+				benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("grpc_http2_protobuf", func(b *testing.B) {
+				ds := common.ToProtoData(dataSet)
+				benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ds, b)
+				ds = nil
+				runtime.GC()
+			})
+			b.Run("kitex_grpc_protobuf", func(b *testing.B) {
+				ds := ToKitexDataSet(dataSet)
+				benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, ds, b)
+				ds = nil
+				runtime.GC()
+			})
 		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
-		})
-	})
-
-	b.Run("2", func(b *testing.B) {
-		clientsCount := 2
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
-		})
-	})
-
-	b.Run("4", func(b *testing.B) {
-		clientsCount := 4
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
-		})
-	})
-
-	b.Run("8", func(b *testing.B) {
-		clientsCount := 8
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
-		})
-	})
-
-	b.Run("16", func(b *testing.B) {
-		clientsCount := 16
-
-		b.Run("grpc_http2_protobuf", func(b *testing.B) {
-			benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n, ghpDataSet, b)
-		})
-		b.Run("kitex_grpc_protobuf", func(b *testing.B) {
-			benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n, kghpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_mus", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n, cstmDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_protobuf", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n, cstpDataSet, b)
-		})
-		b.Run("cmd-stream_tcp_json", func(b *testing.B) {
-			benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n, cstjDataSet, b)
-		})
-	})
-}
-
-// -----------------------------------------------------------------------------
-// gRPC/HTTP2,Protobuf
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_gRPC_HTTP2_Protobuf(clientsCount int,
-	dataSet [][]*common.ProtoData, b *testing.B,
-) {
-	benchmark_gRPC_HTTP2_Protobuf(clientsCount, 0, dataSet, ghp.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmarkFixed_gRPC_HTTP2_Protobuf(clientsCount, n int,
-	dataSet [][]*common.ProtoData, b *testing.B,
-) {
-	var (
-		copsD      = make(chan time.Duration, n)
-		exchangeFn = func(data *common.ProtoData, client ghp.EchoServiceClient,
-			wg *sync.WaitGroup,
-			b *testing.B,
-		) {
-			ghp.ExchangeFixed(data, client, copsD, wg, b)
-		}
-		N = n / clientsCount
-	)
-	benchmark_gRPC_HTTP2_Protobuf(clientsCount, N, dataSet, exchangeFn, b)
-	b.ReportMetric(float64(N), NMetric)
-	reportMetrics(copsD, b)
-}
-
-func benchmark_gRPC_HTTP2_Protobuf(clientsCount, N int,
-	dataSet [][]*common.ProtoData,
-	exchangeFn ExchangeFn_gRPC,
-	b *testing.B,
-) {
-	var (
-		addr = "127.0.0.1:9001"
-		l    net.Listener
-		err  error
-		wgS  = &sync.WaitGroup{}
-	)
-	l, err = ghp.StartServer(addr, wgS)
-	if err != nil {
-		b.Fatal(err)
-	}
-	clients, err := ghp.MakeClients(addr, clientsCount)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	var i int
-	for i = 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(clientsCount)
-		for j := range clientsCount {
-			go exchangeFn(dataSet[j][i], clients[j], wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-	if err = ghp.CloseServer(l, wgS); err != nil {
-		b.Fatal(err)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Connect/Conn,Protobuf
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_Connect_Conn_Protobuf(clientsCount int,
-	dataSet [][]*common.ProtoData, b *testing.B,
-) {
-	benchmark_Connect_Conn_Protobuf(clientsCount, 0, dataSet, ctp.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmark_Connect_Conn_Protobuf(clientsCount, N int,
-	dataSet [][]*common.ProtoData,
-	exchangeFn ExchangeFn_Connect,
-	b *testing.B,
-) {
-	var (
-		addr = "127.0.0.1:9004"
-		wgS  = &sync.WaitGroup{}
-	)
-	server := ctp.StartServer(addr, wgS)
-	time.Sleep(100 * time.Millisecond)
-	clients, err := ctp.MakeClients(addr, clientsCount)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	for i := 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(len(clients))
-		for j := 0; j < len(clients); j++ {
-			go exchangeFn(dataSet[j][i], clients[j], wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-	if err = ctp.StopServer(server, wgS); err != nil {
-		b.Fatal(err)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Kitex/gRPC,Protobuf
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_Kitex_gRPC_Protobuf(clientsCount int,
-	dataSet [][]*kgp_echo.KitexData,
-	b *testing.B,
-) {
-	benchmark_Kitex_gRPC_Protobuf(clientsCount, 0, dataSet, kgp.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmarkFixed_Kitex_gRPC_Protobuf(clientsCount, n int,
-	dataSet [][]*kgp_echo.KitexData,
-	b *testing.B,
-) {
-	var (
-		copsD                            = make(chan time.Duration, n)
-		exchangeFn ExchangeFn_Kitex_gRPC = func(data *kgp_echo.KitexData,
-			client kgp_service.Client,
-			wg *sync.WaitGroup,
-			b *testing.B,
-		) {
-			kgp.ExchangeFixed(data, client, copsD, wg, b)
-		}
-		N = n / clientsCount
-	)
-	benchmark_Kitex_gRPC_Protobuf(clientsCount, N, dataSet,
-		exchangeFn, b)
-	b.ReportMetric(float64(N), NMetric)
-	reportMetrics(copsD, b)
-}
-
-func benchmark_Kitex_gRPC_Protobuf(clientsCount, N int,
-	dataSet [][]*kgp_echo.KitexData,
-	exchangeFn ExchangeFn_Kitex_gRPC,
-	b *testing.B,
-) {
-	var (
-		addr = "127.0.0.1:9003"
-		wgS  = &sync.WaitGroup{}
-	)
-	server := kgp.StartServer(addr, wgS)
-	time.Sleep(100 * time.Millisecond)
-	clients, err := kgp.MakeClients(addr, clientsCount)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	for i := 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(len(clients))
-		for j := 0; j < len(clients); j++ {
-			go exchangeFn(dataSet[j][i], clients[j], wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-	if err = kgp.StopServer(server, wgS); err != nil {
-		b.Fatal(err)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// cmd-stream/TCP,MUS
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_CmdStream_TCP_MUS(clientsCount int,
-	dataSet [][]cstm_tm.EchoCmd,
-	b *testing.B,
-) {
-	benchmark_CmdStream_TCP_MUS(clientsCount, 0, dataSet, cstm_tm.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmarkFixed_CmdStream_TCP_MUS(clientsCount, n int,
-	dataSet [][]cstm_tm.EchoCmd,
-	b *testing.B,
-) {
-	var (
-		copsD      = make(chan time.Duration, n)
-		exchangeFn = func(cmd cstm_tm.EchoCmd, sender sndr.Sender[cstm_tm.Receiver],
-			wg *sync.WaitGroup,
-			b *testing.B,
-		) {
-			cstm_tm.ExchangeFixed(cmd, sender, copsD, wg, b)
-		}
-		N = n / clientsCount
-	)
-	benchmark_CmdStream_TCP_MUS(clientsCount, N, dataSet, exchangeFn, b)
-	b.ReportMetric(float64(N), NMetric)
-	reportMetrics(copsD, b)
-}
-
-func benchmark_CmdStream_TCP_MUS(clientsCount, N int,
-	dataSet [][]cstm_tm.EchoCmd,
-	exchangFn ExchangeFn_CmdStream_MUS,
-	b *testing.B,
-) {
-	var (
-		addr        = "127.0.0.1:9003"
-		invoker     = srv.NewInvoker(cstm_tm.Receiver{})
-		serverCodec = cdcmus.NewServerCodec(cstm_tm.CmdMUS, cstm_tm.ResultMUS)
-		clientCodec = cdcmus.NewClientCodec(cstm_tm.CmdMUS, cstm_tm.ResultMUS)
-		wgS         = &sync.WaitGroup{}
-	)
-	server, err := cs.MakeServer(clientsCount, serverCodec, invoker)
-	if err != nil {
-		b.Fatal(err)
-	}
-	wgS.Add(1)
-	go func() {
-		server.ListenAndServe(addr)
-		wgS.Done()
-	}()
-	time.Sleep(100 * time.Millisecond)
-
-	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	for i := 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(clientsCount)
-		for j := range clientsCount {
-			go exchangFn(dataSet[j][i], sender, wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-
-	if err = sender.CloseAndWait(time.Second); err != nil {
-		b.Fatal(err)
-	}
-	if err = server.Close(); err != nil {
-		b.Fatal(err)
-	}
-	wgS.Wait()
-}
-
-// -----------------------------------------------------------------------------
-// cmd-stream/TCP,Protobuf
-// -----------------------------------------------------------------------------
-
-// If you are looking for an example of using cmd-stream/Protobuf also check
-// https://github.com/cmd-stream/cmd-stream-examples-go/tree/main/standard_protobuf.
-
-func benchmarkQPS_CmdStream_TCP_Protobuf(clientsCount int,
-	dataSet [][]*cstm_tp.EchoCmd,
-	b *testing.B,
-) {
-	benchmark_CmdStream_TCP_Protobuf(clientsCount, 0, dataSet, cstm_tp.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmarkFixed_CmdStream_TCP_Protobuf(clientsCount, n int,
-	dataSet [][]*cstm_tp.EchoCmd,
-	b *testing.B,
-) {
-	var (
-		copsD      = make(chan time.Duration, n)
-		exchangeFn = func(cmd *cstm_tp.EchoCmd, sender sndr.Sender[cstm_tp.Receiver],
-			wg *sync.WaitGroup,
-			b *testing.B,
-		) {
-			cstm_tp.ExchangeFixed(cmd, sender, copsD, wg, b)
-		}
-		N = n / clientsCount
-	)
-	benchmark_CmdStream_TCP_Protobuf(clientsCount, N, dataSet, exchangeFn, b)
-	b.ReportMetric(float64(N), NMetric)
-	reportMetrics(copsD, b)
-}
-
-func benchmark_CmdStream_TCP_Protobuf(clientsCount, N int,
-	dataSet [][]*cstm_tp.EchoCmd,
-	exchangFn ExchangeFn_CmdStream_Protobuf,
-	b *testing.B,
-) {
-	var (
-		addr     = "127.0.0.1:9004"
-		invoker  = srv.NewInvoker(cstm_tp.Receiver{})
-		cmdTypes = []reflect.Type{
-			reflect.TypeFor[*cstm_tp.EchoCmd](),
-		}
-		resultTypes = []reflect.Type{
-			reflect.TypeFor[*cstm_tp.EchoResult](),
-		}
-		serverCodec = cdcproto.NewServerCodec[cstm_tp.Receiver](cmdTypes,
-			resultTypes)
-		clientCodec = cdcproto.NewClientCodec[cstm_tp.Receiver](cmdTypes,
-			resultTypes)
-		wgS = &sync.WaitGroup{}
-	)
-	server, err := cs.MakeServer(clientsCount, serverCodec, invoker)
-	if err != nil {
-		b.Fatal(err)
-	}
-	wgS.Add(1)
-	go func() {
-		server.ListenAndServe(addr)
-		wgS.Done()
-	}()
-	time.Sleep(100 * time.Millisecond)
-	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	for i := 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(clientsCount)
-		for j := range clientsCount {
-			go exchangFn(dataSet[j][i], sender, wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-
-	if err = sender.CloseAndWait(time.Second); err != nil {
-		b.Fatal(err)
-	}
-	if err = server.Close(); err != nil {
-		b.Fatal(err)
-	}
-	wgS.Wait()
-}
-
-// -----------------------------------------------------------------------------
-// cmd-stream/TCP,JSON
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_CmdStream_TCP_JSON(clientsCount int,
-	dataSet [][]cstm_tj.EchoCmd,
-	b *testing.B,
-) {
-	benchmark_CmdStream_TCP_JSON(clientsCount, 0, dataSet, cstm_tj.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmarkFixed_CmdStream_TCP_JSON(clientsCount, n int,
-	dataSet [][]cstm_tj.EchoCmd,
-	b *testing.B,
-) {
-	var (
-		copsD      = make(chan time.Duration, n)
-		exchangeFn = func(cmd cstm_tj.EchoCmd, sender sndr.Sender[cstm_tj.Receiver],
-			wg *sync.WaitGroup,
-			b *testing.B,
-		) {
-			cstm_tj.ExchangeFixed(cmd, sender, copsD, wg, b)
-		}
-		N = n / clientsCount
-	)
-	benchmark_CmdStream_TCP_JSON(clientsCount, N, dataSet, exchangeFn, b)
-	b.ReportMetric(float64(N), NMetric)
-	reportMetrics(copsD, b)
-}
-
-func benchmark_CmdStream_TCP_JSON(clientsCount, N int,
-	dataSet [][]cstm_tj.EchoCmd,
-	exchangFn ExchangeFn_CmdStream_JSON,
-	b *testing.B,
-) {
-	var (
-		addr     = "127.0.0.1:9004"
-		invoker  = srv.NewInvoker(cstm_tj.Receiver{})
-		cmdTypes = []reflect.Type{
-			reflect.TypeFor[cstm_tj.EchoCmd](),
-		}
-		resultTypes = []reflect.Type{
-			reflect.TypeFor[cstm_tj.EchoResult](),
-		}
-		serverCodec = cdcjson.NewServerCodec[cstm_tj.Receiver](cmdTypes,
-			resultTypes)
-		clientCodec = cdcjson.NewClientCodec[cstm_tj.Receiver](cmdTypes,
-			resultTypes)
-		wgS = &sync.WaitGroup{}
-	)
-	server, err := cs.MakeServer(clientsCount, serverCodec, invoker)
-	if err != nil {
-		b.Fatal(err)
-	}
-	wgS.Add(1)
-	go func() {
-		server.ListenAndServe(addr)
-		wgS.Done()
-	}()
-	time.Sleep(100 * time.Millisecond)
-
-	sender, err := cs.MakeSender(addr, clientsCount, clientCodec)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	for i := 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(clientsCount)
-		for j := range clientsCount {
-			go exchangFn(dataSet[j][i], sender, wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-
-	if err = sender.CloseAndWait(time.Second); err != nil {
-		b.Fatal(err)
-	}
-	if err = server.Close(); err != nil {
-		b.Fatal(err)
-	}
-	wgS.Wait()
-}
-
-// -----------------------------------------------------------------------------
-// DRPC/TCP,Protobuf
-// -----------------------------------------------------------------------------
-
-func benchmarkQPS_DRPC_TCP_Protobuf(clientsCount int,
-	dataSet [][]*common.ProtoData, b *testing.B,
-) {
-	benchmark_DRPC_TCP_Protobuf(clientsCount, 0, dataSet, dtp.ExchangeQPS, b)
-	b.ReportMetric(0, NsOpMetric)
-	b.ReportMetric(float64(b.Elapsed()), NsMetric)
-}
-
-func benchmark_DRPC_TCP_Protobuf(clientsCount, N int,
-	dataSet [][]*common.ProtoData,
-	exchangeFn ExchangeFn_DRPC,
-	b *testing.B,
-) {
-	var (
-		addr = "127.0.0.1:9005"
-		l    net.Listener
-		err  error
-		wgS  = &sync.WaitGroup{}
-	)
-	l, err = dtp.StartServer(addr, wgS)
-	if err != nil {
-		b.Fatal(err)
-	}
-	clients, err := dtp.MakeClients(addr, clientsCount)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.ResetTimer()
-	wg := &sync.WaitGroup{}
-	var i int
-	for i = 0; i < b.N; i++ {
-		if N != 0 && i == N {
-			break
-		}
-		wg.Add(clientsCount)
-		for j := range clientsCount {
-			go exchangeFn(dataSet[j][i], clients[j], wg, b)
-		}
-	}
-	wg.Wait()
-	b.StopTimer()
-	if err = dtp.CloseServer(l, wgS); err != nil {
-		b.Fatal(err)
 	}
 }
 
@@ -843,7 +148,7 @@ func genSize() int {
 	return n
 }
 
-func generateDataSet(clientsCount, size int) (s [][]common.Data) {
+func genDataSet(clientsCount, size int) (s [][]common.Data) {
 	s = make([][]common.Data, clientsCount)
 	for i := range clientsCount {
 		s[i] = make([]common.Data, size)

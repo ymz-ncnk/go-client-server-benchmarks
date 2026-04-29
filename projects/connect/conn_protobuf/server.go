@@ -2,6 +2,8 @@ package connectproto
 
 import (
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -13,25 +15,26 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-func StartServer(addr string, wg *sync.WaitGroup) *http.Server {
+func StartServer(addr string, wg *sync.WaitGroup) (string, *http.Server) {
 	mux := http.NewServeMux()
 	path, handler := connectprotoconnect.NewEchoServiceHandler(&echoServer{})
 	mux.Handle(path, handler)
-
-	srv := &http.Server{
-		Addr:    addr,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		panic(err)
 	}
-
+	server := &http.Server{
+		Handler:           h2c.NewHandler(mux, &http2.Server{}),
+		ReadHeaderTimeout: time.Second,
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
 	}()
-
-	return srv
+	return l.Addr().String(), server
 }
 
 func StopServer(srv *http.Server, wg *sync.WaitGroup) error {
