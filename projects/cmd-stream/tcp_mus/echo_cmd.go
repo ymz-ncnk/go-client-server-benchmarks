@@ -10,11 +10,11 @@ import (
 
 type EchoCmd common.Data
 
-func (c EchoCmd) Exec(ctx context.Context, seq core.Seq, at time.Time,
-	receiver Receiver, proxy core.Proxy,
-) (err error) {
+func (c EchoCmd) Exec(ctx context.Context, receiver Receiver, proxy core.Proxy) (
+	err error,
+) {
 	time.Sleep(common.Delay)
-	_, err = proxy.Send(seq, EchoResult(c))
+	_, err = proxy.Send(EchoResult(c))
 	return
 }
 

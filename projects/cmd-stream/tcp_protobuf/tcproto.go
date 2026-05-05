@@ -8,11 +8,11 @@ import (
 	"github.com/ymz-ncnk/go-client-server-communication-benchmarks/common"
 )
 
-func (c *EchoCmd) Exec(ctx context.Context, seq core.Seq, at time.Time,
-	receiver Receiver, proxy core.Proxy,
-) (err error) {
+func (c *EchoCmd) Exec(ctx context.Context, receiver Receiver, proxy core.Proxy) (
+	err error,
+) {
 	time.Sleep(common.Delay)
-	_, err = proxy.Send(seq, &EchoResult{ProtoData: c.ProtoData})
+	_, err = proxy.Send(&EchoResult{ProtoData: c.ProtoData})
 	return
 }
 
