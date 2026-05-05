@@ -1,9 +1,9 @@
 # go-client-server-benchmarks
 
-This project compares the performance of several client-server communication
-libraries and frameworks for Go.
+This benchmark suite evaluates the throughput, latency, and resource efficiency
+of several Go-based communication frameworks under high-concurrency scenarios.
 
-## Tested libraries/frameworks
+## Tested frameworks
 
 - [cmd-stream](https://github.com/cmd-stream/cmd-stream-go)
 - [Connect](https://connectrpc.com/)
